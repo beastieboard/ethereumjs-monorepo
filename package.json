@@ -38,8 +38,8 @@
     "tsc": "./config/cli/ts-compile.sh"
   },
   "dependencies": {
-    "@ethereumjs/common": "3.0.0-rc.1",
-    "@ethereumjs/util": "8.0.0-rc.1",
+    "@ethereumjs/common": "3.0.0",
+    "@ethereumjs/util": "8.0.0",
     "debug": "^4.3.3",
     "ethereum-cryptography": "^1.1.2"
   },

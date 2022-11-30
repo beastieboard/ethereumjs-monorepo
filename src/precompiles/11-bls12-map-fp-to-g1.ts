@@ -6,7 +6,7 @@ import { PrecompileInput } from './types'
 
 const { BLS12_381_ToFpPoint, BLS12_381_FromG1Point } = require('./util/bls12_381')
 
-export async function precompile11(opts: PrecompileInput): Promise<ExecResult> {
+export function precompile11(opts: PrecompileInput): ExecResult {
   const mcl = (<any>opts._EVM)._mcl!
 
   const inputData = opts.data

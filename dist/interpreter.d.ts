@@ -96,12 +96,12 @@ export declare class Interpreter {
     _result: RunResult;
     private opDebuggers;
     constructor(evm: EVM, eei: EEIInterface, env: Env, gasLeft: bigint);
-    run(code: Buffer, opts?: InterpreterOpts): Promise<InterpreterResult>;
+    run(code: Buffer, opts?: InterpreterOpts): InterpreterResult;
     /**
      * Executes the opcode to which the program counter is pointing,
      * reducing its base gas cost, and increments the program counter.
      */
-    runStep(): Promise<void>;
+    runStep(): void;
     /**
      * Get the handler function for an opcode.
      */
@@ -110,7 +110,7 @@ export declare class Interpreter {
      * Get info for an opcode from EVM's list of opcodes.
      */
     lookupOpInfo(op: number): Opcode;
-    _runStepHook(dynamicFee: bigint, gasLeft: bigint): Promise<void>;
+    _runStepHook(dynamicFee: bigint, gasLeft: bigint): void;
     _getValidJumpDests(code: Buffer): Uint8Array;
     /**
      * Logic extracted from EEI
@@ -143,17 +143,17 @@ export declare class Interpreter {
      * Returns balance of the given account.
      * @param address - Address of account
      */
-    getExternalBalance(address: Address): Promise<bigint>;
+    getExternalBalance(address: Address): bigint;
     /**
      * Store 256-bit a value in memory to persistent storage.
      */
-    storageStore(key: Buffer, value: Buffer): Promise<void>;
+    storageStore(key: Buffer, value: Buffer): void;
     /**
      * Loads a 256-bit value to memory from persistent storage.
      * @param key - Storage key
      * @param original - If true, return the original storage value (default: false)
      */
-    storageLoad(key: Buffer, original?: boolean): Promise<Buffer>;
+    storageLoad(key: Buffer, original?: boolean): Buffer;
     /**
      * Store 256-bit a value in memory to transient storage.
      * @param address Address to use
@@ -280,44 +280,44 @@ export declare class Interpreter {
     /**
      * Sends a message with arbitrary data to a given address path.
      */
-    call(gasLimit: bigint, address: Address, value: bigint, data: Buffer): Promise<bigint>;
+    call(gasLimit: bigint, address: Address, value: bigint, data: Buffer): bigint;
     /**
      * Sends a message with arbitrary data to a given address path.
      */
-    authcall(gasLimit: bigint, address: Address, value: bigint, data: Buffer): Promise<bigint>;
+    authcall(gasLimit: bigint, address: Address, value: bigint, data: Buffer): bigint;
     /**
      * Message-call into this account with an alternative account's code.
      */
-    callCode(gasLimit: bigint, address: Address, value: bigint, data: Buffer): Promise<bigint>;
+    callCode(gasLimit: bigint, address: Address, value: bigint, data: Buffer): bigint;
     /**
      * Sends a message with arbitrary data to a given address path, but disallow
      * state modifications. This includes log, create, selfdestruct and call with
      * a non-zero value.
      */
-    callStatic(gasLimit: bigint, address: Address, value: bigint, data: Buffer): Promise<bigint>;
+    callStatic(gasLimit: bigint, address: Address, value: bigint, data: Buffer): bigint;
     /**
      * Message-call into this account with an alternative account’s code, but
      * persisting the current values for sender and value.
      */
-    callDelegate(gasLimit: bigint, address: Address, value: bigint, data: Buffer): Promise<bigint>;
-    _baseCall(msg: Message): Promise<bigint>;
+    callDelegate(gasLimit: bigint, address: Address, value: bigint, data: Buffer): bigint;
+    _baseCall(msg: Message): bigint;
     /**
      * Creates a new contract with a given value.
      */
-    create(gasLimit: bigint, value: bigint, data: Buffer, salt?: Buffer): Promise<bigint>;
+    create(gasLimit: bigint, value: bigint, data: Buffer, salt?: Buffer): bigint;
     /**
      * Creates a new contract with a given value. Generates
      * a deterministic address via CREATE2 rules.
      */
-    create2(gasLimit: bigint, value: bigint, data: Buffer, salt: Buffer): Promise<bigint>;
+    create2(gasLimit: bigint, value: bigint, data: Buffer, salt: Buffer): bigint;
     /**
      * Mark account for later deletion and give the remaining balance to the
      * specified beneficiary address. This will cause a trap and the
      * execution will be aborted immediately.
      * @param toAddress - Beneficiary address
      */
-    selfDestruct(toAddress: Address): Promise<void>;
-    _selfDestruct(toAddress: Address): Promise<void>;
+    selfDestruct(toAddress: Address): void;
+    _selfDestruct(toAddress: Address): void;
     /**
      * Creates a new log in the current environment.
      */
@@ -329,6 +329,6 @@ export declare class PureInterpreter extends Interpreter {
      * Executes the opcode to which the program counter is pointing,
      * reducing its base gas cost, and increments the program counter.
      */
-    runStepPure(): Promise<void>;
+    runStepPure(): void;
 }
 //# sourceMappingURL=interpreter.d.ts.map

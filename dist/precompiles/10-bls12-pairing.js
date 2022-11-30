@@ -6,7 +6,7 @@ const exceptions_1 = require("../exceptions");
 const { BLS12_381_ToG1Point, BLS12_381_ToG2Point } = require('./util/bls12_381');
 const zeroBuffer = Buffer.alloc(32, 0);
 const oneBuffer = Buffer.concat([Buffer.alloc(31, 0), Buffer.from('01', 'hex')]);
-async function precompile10(opts) {
+function precompile10(opts) {
     const mcl = opts._EVM._mcl;
     const inputData = opts.data;
     const baseGas = opts._common.paramByEIP('gasPrices', 'Bls12381PairingBaseGas', 2537) ?? BigInt(0);

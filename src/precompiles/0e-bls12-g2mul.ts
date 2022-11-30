@@ -10,7 +10,7 @@ const {
   BLS12_381_ToFrPoint,
 } = require('./util/bls12_381')
 
-export async function precompile0e(opts: PrecompileInput): Promise<ExecResult> {
+export function precompile0e(opts: PrecompileInput): ExecResult {
   const mcl = (<any>opts._EVM)._mcl!
 
   const inputData = opts.data

@@ -6,7 +6,7 @@ import { Common } from '@ethereumjs/common';
  * These functions are therefore not read-only
  */
 export interface AsyncDynamicGasHandler {
-    (runState: RunState, gas: bigint, common: Common): Promise<bigint>;
+    (runState: RunState, gas: bigint, common: Common): bigint;
 }
 export interface SyncDynamicGasHandler {
     (runState: RunState, gas: bigint, common: Common): bigint;

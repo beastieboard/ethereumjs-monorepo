@@ -5,7 +5,7 @@ const evm_1 = require("../evm");
 const exceptions_1 = require("../exceptions");
 const bls12_381_1 = require("./util/bls12_381");
 const { BLS12_381_ToG2Point, BLS12_381_ToFrPoint, BLS12_381_FromG2Point, } = require('./util/bls12_381');
-async function precompile0f(opts) {
+function precompile0f(opts) {
     const mcl = opts._EVM._mcl;
     const inputData = opts.data;
     if (inputData.length === 0) {

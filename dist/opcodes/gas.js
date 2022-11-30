@@ -12,7 +12,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* EXP */
         0x0a,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [_base, exponent] = runState.stack.peek(2);
             if (exponent === BigInt(0)) {
                 return gas;
@@ -32,7 +32,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* SHA3 */
         0x20,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [offset, length] = runState.stack.peek(2);
             gas += (0, util_2.subMemUsage)(runState, offset, length, common);
             gas += common.param('gasPrices', 'sha3Word') * (0, util_2.divCeil)(length, BigInt(32));
@@ -42,7 +42,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* BALANCE */
         0x31,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (common.isActivatedEIP(2929) === true) {
                 const addressBigInt = runState.stack.peek()[0];
                 const address = new util_1.Address((0, util_2.addressToBuffer)(addressBigInt));
@@ -54,7 +54,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* CALLDATACOPY */
         0x37,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [memOffset, _dataOffset, dataLength] = runState.stack.peek(3);
             gas += (0, util_2.subMemUsage)(runState, memOffset, dataLength, common);
             if (dataLength !== BigInt(0)) {
@@ -66,7 +66,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* CODECOPY */
         0x39,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [memOffset, _codeOffset, dataLength] = runState.stack.peek(3);
             gas += (0, util_2.subMemUsage)(runState, memOffset, dataLength, common);
             if (dataLength !== BigInt(0)) {
@@ -78,7 +78,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* EXTCODESIZE */
         0x3b,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (common.isActivatedEIP(2929) === true) {
                 const addressBigInt = runState.stack.peek()[0];
                 const address = new util_1.Address((0, util_2.addressToBuffer)(addressBigInt));
@@ -90,7 +90,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* EXTCODECOPY */
         0x3c,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [addressBigInt, memOffset, _codeOffset, dataLength] = runState.stack.peek(4);
             gas += (0, util_2.subMemUsage)(runState, memOffset, dataLength, common);
             if (common.isActivatedEIP(2929) === true) {
@@ -106,7 +106,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* RETURNDATACOPY */
         0x3e,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [memOffset, returnDataOffset, dataLength] = runState.stack.peek(3);
             if (returnDataOffset + dataLength > runState.interpreter.getReturnDataSize()) {
                 (0, util_2.trap)(exceptions_1.ERROR.OUT_OF_GAS);
@@ -121,7 +121,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* EXTCODEHASH */
         0x3f,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (common.isActivatedEIP(2929) === true) {
                 const addressBigInt = runState.stack.peek()[0];
                 const address = new util_1.Address((0, util_2.addressToBuffer)(addressBigInt));
@@ -133,7 +133,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* MLOAD */
         0x51,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const pos = runState.stack.peek()[0];
             gas += (0, util_2.subMemUsage)(runState, pos, BigInt(32), common);
             return gas;
@@ -142,7 +142,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* MSTORE */
         0x52,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const offset = runState.stack.peek()[0];
             gas += (0, util_2.subMemUsage)(runState, offset, BigInt(32), common);
             return gas;
@@ -151,7 +151,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* MSTORE8 */
         0x53,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const offset = runState.stack.peek()[0];
             gas += (0, util_2.subMemUsage)(runState, offset, BigInt(1), common);
             return gas;
@@ -160,7 +160,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* SLOAD */
         0x54,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const key = runState.stack.peek()[0];
             const keyBuf = (0, util_1.setLengthLeft)((0, util_1.bigIntToBuffer)(key), 32);
             if (common.isActivatedEIP(2929) === true) {
@@ -172,7 +172,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* SSTORE */
         0x55,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (runState.interpreter.isStatic()) {
                 (0, util_2.trap)(exceptions_1.ERROR.STATIC_STATE_CHANGE);
             }
@@ -186,8 +186,8 @@ exports.dynamicGasHandlers = new Map([
             else {
                 value = (0, util_1.bigIntToBuffer)(val);
             }
-            const currentStorage = (0, util_2.setLengthLeftStorage)(await runState.interpreter.storageLoad(keyBuf));
-            const originalStorage = (0, util_2.setLengthLeftStorage)(await runState.interpreter.storageLoad(keyBuf, true));
+            const currentStorage = (0, util_2.setLengthLeftStorage)(runState.interpreter.storageLoad(keyBuf));
+            const originalStorage = (0, util_2.setLengthLeftStorage)(runState.interpreter.storageLoad(keyBuf, true));
             if (common.hardfork() === common_1.Hardfork.Constantinople) {
                 gas += (0, EIP1283_1.updateSstoreGasEIP1283)(runState, currentStorage, originalStorage, (0, util_2.setLengthLeftStorage)(value), common);
             }
@@ -209,7 +209,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* LOG */
         0xa0,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (runState.interpreter.isStatic()) {
                 (0, util_2.trap)(exceptions_1.ERROR.STATIC_STATE_CHANGE);
             }
@@ -228,7 +228,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* CREATE */
         0xf0,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (runState.interpreter.isStatic()) {
                 (0, util_2.trap)(exceptions_1.ERROR.STATIC_STATE_CHANGE);
             }
@@ -246,7 +246,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* CALL */
         0xf1,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.peek(7);
             const toAddress = new util_1.Address((0, util_2.addressToBuffer)(toAddr));
             if (runState.interpreter.isStatic() && value !== BigInt(0)) {
@@ -263,11 +263,11 @@ exports.dynamicGasHandlers = new Map([
             if (common.gteHardfork(common_1.Hardfork.SpuriousDragon)) {
                 // We are at or after Spurious Dragon
                 // Call new account gas: account is DEAD and we transfer nonzero value
-                if ((await runState.eei.getAccount(toAddress)).isEmpty() && !(value === BigInt(0))) {
+                if ((runState.eei.getAccount(toAddress)).isEmpty() && !(value === BigInt(0))) {
                     gas += common.param('gasPrices', 'callNewAccount');
                 }
             }
-            else if (!(await runState.eei.accountExists(toAddress))) {
+            else if (!(runState.eei.accountExists(toAddress))) {
                 // We are before Spurious Dragon and the account does not exist.
                 // Call new account gas: account does not exist (it is not in the state trie, not even as an "empty" account)
                 gas += common.param('gasPrices', 'callNewAccount');
@@ -293,7 +293,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* CALLCODE */
         0xf2,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.peek(7);
             gas += (0, util_2.subMemUsage)(runState, inOffset, inLength, common);
             gas += (0, util_2.subMemUsage)(runState, outOffset, outLength, common);
@@ -322,7 +322,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* RETURN */
         0xf3,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [offset, length] = runState.stack.peek(2);
             gas += (0, util_2.subMemUsage)(runState, offset, length, common);
             return gas;
@@ -331,7 +331,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* DELEGATECALL */
         0xf4,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.peek(6);
             gas += (0, util_2.subMemUsage)(runState, inOffset, inLength, common);
             gas += (0, util_2.subMemUsage)(runState, outOffset, outLength, common);
@@ -352,7 +352,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* CREATE2 */
         0xf5,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (runState.interpreter.isStatic()) {
                 (0, util_2.trap)(exceptions_1.ERROR.STATIC_STATE_CHANGE);
             }
@@ -371,7 +371,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* AUTH */
         0xf6,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [_address, memOffset, memLength] = runState.stack.peek(3);
             gas += (0, util_2.subMemUsage)(runState, memOffset, memLength, common);
             return gas;
@@ -380,7 +380,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* AUTHCALL */
         0xf7,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (runState.auth === undefined) {
                 (0, util_2.trap)(exceptions_1.ERROR.AUTHCALL_UNSET);
             }
@@ -395,7 +395,7 @@ exports.dynamicGasHandlers = new Map([
             gas += (0, util_2.subMemUsage)(runState, retOffset, retLength, common);
             if (value > BigInt(0)) {
                 gas += common.param('gasPrices', 'authcallValueTransfer');
-                const account = await runState.eei.getAccount(toAddress);
+                const account = runState.eei.getAccount(toAddress);
                 if (account.isEmpty()) {
                     gas += common.param('gasPrices', 'callNewAccount');
                 }
@@ -414,7 +414,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* STATICCALL */
         0xfa,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.peek(6);
             gas += (0, util_2.subMemUsage)(runState, inOffset, inLength, common);
             gas += (0, util_2.subMemUsage)(runState, outOffset, outLength, common);
@@ -430,7 +430,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* REVERT */
         0xfd,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             const [offset, length] = runState.stack.peek(2);
             gas += (0, util_2.subMemUsage)(runState, offset, length, common);
             return gas;
@@ -439,7 +439,7 @@ exports.dynamicGasHandlers = new Map([
     [
         /* SELFDESTRUCT */
         0xff,
-        async function (runState, gas, common) {
+        function (runState, gas, common) {
             if (runState.interpreter.isStatic()) {
                 (0, util_2.trap)(exceptions_1.ERROR.STATIC_STATE_CHANGE);
             }
@@ -448,10 +448,10 @@ exports.dynamicGasHandlers = new Map([
             let deductGas = false;
             if (common.gteHardfork(common_1.Hardfork.SpuriousDragon)) {
                 // EIP-161: State Trie Clearing
-                const balance = await runState.interpreter.getExternalBalance(runState.interpreter.getAddress());
+                const balance = runState.interpreter.getExternalBalance(runState.interpreter.getAddress());
                 if (balance > BigInt(0)) {
                     // This technically checks if account is empty or non-existent
-                    const empty = (await runState.eei.getAccount(selfdestructToAddress)).isEmpty();
+                    const empty = (runState.eei.getAccount(selfdestructToAddress)).isEmpty();
                     if (empty) {
                         deductGas = true;
                     }
@@ -459,7 +459,7 @@ exports.dynamicGasHandlers = new Map([
             }
             else if (common.gteHardfork(common_1.Hardfork.TangerineWhistle)) {
                 // EIP-150 (Tangerine Whistle) gas semantics
-                const exists = await runState.eei.accountExists(selfdestructToAddress);
+                const exists = runState.eei.accountExists(selfdestructToAddress);
                 if (!exists) {
                     deductGas = true;
                 }

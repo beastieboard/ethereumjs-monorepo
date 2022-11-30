@@ -69,7 +69,7 @@ export interface EVMOpts {
      *    // The logic of the opcode which holds the logic of changing the current state
      *    logicFunction: function(runState: RunState)
      * }
-     * Note: gasFunction and logicFunction can both be async or synchronous functions
+     * Note: gasFunction and logicFunction can both be or synchronous functions
      */
     customOpcodes?: CustomOpcode[];
     customPrecompiles?: CustomPrecompile[];
@@ -116,7 +116,7 @@ export declare class EVM implements EVMInterface {
      * set to public due to implementation internals
      * @hidden
      */
-    readonly _emit: (topic: string, data: any) => Promise<void>;
+    readonly _emit: (topic: string, data: any) => void;
     /**
      * Pointer to the mcl package, not for public usage
      * set to public due to implementation internals
@@ -133,38 +133,38 @@ export declare class EVM implements EVMInterface {
      */
     readonly DEBUG: boolean;
     /**
-     * EVM async constructor. Creates engine instance and initializes it.
+     * EVM constructor. Creates engine instance and initializes it.
      *
      * @param opts EVM engine constructor options
      */
-    static create(opts: EVMOpts): Promise<EVM>;
+    static create(opts: EVMOpts): EVM;
     constructor(opts: EVMOpts);
-    protected init(): Promise<void>;
+    protected init(): void;
     /**
      * Returns a list with the currently activated opcodes
      * available for EVM execution
      */
     getActiveOpcodes(): OpcodeList;
-    protected _executePureCall(message: MessageWithTo): Promise<EVMResult>;
-    protected _executeCall(message: MessageWithTo): Promise<EVMResult>;
-    protected _executeCreate(message: Message): Promise<EVMResult>;
+    protected _executePureCall(message: MessageWithTo): EVMResult;
+    protected _executeCall(message: MessageWithTo): EVMResult;
+    protected _executeCreate(message: Message): EVMResult;
     /**
      * Starts the actual bytecode processing for a CALL or CREATE, providing
      * it with the {@link EEI}.
      */
-    protected runInterpreter(message: Message, opts?: InterpreterOpts): Promise<ExecResult>;
-    runPure(opts: EVMRunCallOpts): Promise<EVMResult>;
+    protected runInterpreter(message: Message, opts?: InterpreterOpts): ExecResult;
+    runPure(opts: EVMRunCallOpts): EVMResult;
     /**
      * Executes an EVM message, determining whether it's a call or create
      * based on the `to` address. It checkpoints the state and reverts changes
      * if an exception happens during the message execution.
      */
-    runCall(opts: EVMRunCallOpts): Promise<EVMResult>;
+    runCall(opts: EVMRunCallOpts): EVMResult;
     /**
      * Bound to the global VM and therefore
      * shouldn't be used directly from the evm class
      */
-    runCode(opts: EVMRunCodeOpts): Promise<ExecResult>;
+    runCode(opts: EVMRunCodeOpts): ExecResult;
     /**
      * Returns code for precompile at the given address, or undefined
      * if no such precompile exists.
@@ -173,12 +173,12 @@ export declare class EVM implements EVMInterface {
     /**
      * Executes a precompiled contract with given data and gas limit.
      */
-    protected runPrecompile(code: PrecompileFunc, data: Buffer, gasLimit: bigint): Promise<ExecResult> | ExecResult;
-    protected _loadCode(message: Message): Promise<void>;
-    protected _generateAddress(message: Message): Promise<Address>;
-    protected _reduceSenderBalance(account: Account, message: Message): Promise<void>;
-    protected _addToBalance(toAccount: Account, message: MessageWithTo): Promise<void>;
-    protected _touchAccount(address: Address): Promise<void>;
+    protected runPrecompile(code: PrecompileFunc, data: Buffer, gasLimit: bigint): ExecResult | ExecResult;
+    protected _loadCode(message: Message): void;
+    protected _generateAddress(message: Message): Address;
+    protected _reduceSenderBalance(account: Account, message: Message): void;
+    protected _addToBalance(toAccount: Account, message: MessageWithTo): void;
+    protected _touchAccount(address: Address): void;
     /**
      * Once the interpreter has finished depth 0, a post-message cleanup should be done
      */

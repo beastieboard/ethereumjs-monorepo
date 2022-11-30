@@ -355,10 +355,10 @@ exports.handlers = new Map([
     // 0x31: BALANCE
     [
         0x31,
-        async function (runState) {
+        function (runState) {
             const addressBigInt = runState.stack.pop();
             const address = new util_1.Address((0, util_2.addressToBuffer)(addressBigInt));
-            const balance = await runState.interpreter.getExternalBalance(address);
+            const balance = runState.interpreter.getExternalBalance(address);
             runState.stack.push(balance);
         },
     ],
@@ -448,19 +448,19 @@ exports.handlers = new Map([
     // 0x3b: EXTCODESIZE
     [
         0x3b,
-        async function (runState) {
+        function (runState) {
             const addressBigInt = runState.stack.pop();
-            const size = BigInt((await runState.eei.getContractCode(new util_1.Address((0, util_2.addressToBuffer)(addressBigInt)))).length);
+            const size = BigInt((runState.eei.getContractCode(new util_1.Address((0, util_2.addressToBuffer)(addressBigInt)))).length);
             runState.stack.push(size);
         },
     ],
     // 0x3c: EXTCODECOPY
     [
         0x3c,
-        async function (runState) {
+        function (runState) {
             const [addressBigInt, memOffset, codeOffset, dataLength] = runState.stack.popN(4);
             if (dataLength !== BigInt(0)) {
-                const code = await runState.eei.getContractCode(new util_1.Address((0, util_2.addressToBuffer)(addressBigInt)));
+                const code = runState.eei.getContractCode(new util_1.Address((0, util_2.addressToBuffer)(addressBigInt)));
                 const data = (0, util_2.getDataSlice)(code, codeOffset, dataLength);
                 const memOffsetNum = Number(memOffset);
                 const lengthNum = Number(dataLength);
@@ -472,15 +472,15 @@ exports.handlers = new Map([
     // 0x3f: EXTCODEHASH
     [
         0x3f,
-        async function (runState) {
+        function (runState) {
             const addressBigInt = runState.stack.pop();
             const address = new util_1.Address((0, util_2.addressToBuffer)(addressBigInt));
-            const empty = (await runState.eei.getAccount(address)).isEmpty();
+            const empty = (runState.eei.getAccount(address)).isEmpty();
             if (empty) {
                 runState.stack.push(BigInt(0));
                 return;
             }
-            const codeHash = (await runState.eei.getAccount(new util_1.Address((0, util_2.addressToBuffer)(addressBigInt))))
+            const codeHash = (runState.eei.getAccount(new util_1.Address((0, util_2.addressToBuffer)(addressBigInt))))
                 .codeHash;
             runState.stack.push(BigInt('0x' + codeHash.toString('hex')));
         },
@@ -517,7 +517,7 @@ exports.handlers = new Map([
     // 0x40: BLOCKHASH
     [
         0x40,
-        async function (runState) {
+        function (runState) {
             const number = runState.stack.pop();
             const diff = runState.interpreter.getBlockNumber() - number;
             // block lookups must be within the past 256 blocks
@@ -525,7 +525,7 @@ exports.handlers = new Map([
                 runState.stack.push(BigInt(0));
                 return;
             }
-            const hash = await runState.eei.getBlockHash(number);
+            const hash = runState.eei.getBlockHash(number);
             runState.stack.push(hash);
         },
     ],
@@ -632,10 +632,10 @@ exports.handlers = new Map([
     // 0x54: SLOAD
     [
         0x54,
-        async function (runState) {
+        function (runState) {
             const key = runState.stack.pop();
             const keyBuf = (0, util_1.setLengthLeft)((0, util_1.bigIntToBuffer)(key), 32);
-            const value = await runState.interpreter.storageLoad(keyBuf);
+            const value = runState.interpreter.storageLoad(keyBuf);
             const valueBigInt = value.length ? (0, util_1.bufferToBigInt)(value) : BigInt(0);
             runState.stack.push(valueBigInt);
         },
@@ -643,7 +643,7 @@ exports.handlers = new Map([
     // 0x55: SSTORE
     [
         0x55,
-        async function (runState) {
+        function (runState) {
             const [key, val] = runState.stack.popN(2);
             const keyBuf = (0, util_1.setLengthLeft)((0, util_1.bigIntToBuffer)(key), 32);
             // NOTE: this should be the shortest representation
@@ -654,7 +654,7 @@ exports.handlers = new Map([
             else {
                 value = (0, util_1.bigIntToBuffer)(val);
             }
-            await runState.interpreter.storageStore(keyBuf, value);
+            runState.interpreter.storageStore(keyBuf, value);
         },
     ],
     // 0x56: JUMP
@@ -837,7 +837,7 @@ exports.handlers = new Map([
     // 0xf0: CREATE
     [
         0xf0,
-        async function (runState) {
+        function (runState) {
             const [value, offset, length] = runState.stack.popN(3);
             const gasLimit = runState.messageGasLimit;
             runState.messageGasLimit = undefined;
@@ -845,14 +845,14 @@ exports.handlers = new Map([
             if (length !== BigInt(0)) {
                 data = runState.memory.read(Number(offset), Number(length));
             }
-            const ret = await runState.interpreter.create(gasLimit, value, data);
+            const ret = runState.interpreter.create(gasLimit, value, data);
             runState.stack.push(ret);
         },
     ],
     // 0xf5: CREATE2
     [
         0xf5,
-        async function (runState) {
+        function (runState) {
             if (runState.interpreter.isStatic()) {
                 (0, util_2.trap)(exceptions_1.ERROR.STATIC_STATE_CHANGE);
             }
@@ -863,14 +863,14 @@ exports.handlers = new Map([
             if (length !== BigInt(0)) {
                 data = runState.memory.read(Number(offset), Number(length));
             }
-            const ret = await runState.interpreter.create2(gasLimit, value, data, (0, util_1.setLengthLeft)((0, util_1.bigIntToBuffer)(salt), 32));
+            const ret = runState.interpreter.create2(gasLimit, value, data, (0, util_1.setLengthLeft)((0, util_1.bigIntToBuffer)(salt), 32));
             runState.stack.push(ret);
         },
     ],
     // 0xf1: CALL
     [
         0xf1,
-        async function (runState) {
+        function (runState) {
             const [_currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.popN(7);
             const toAddress = new util_1.Address((0, util_2.addressToBuffer)(toAddr));
             let data = Buffer.alloc(0);
@@ -879,7 +879,7 @@ exports.handlers = new Map([
             }
             const gasLimit = runState.messageGasLimit;
             runState.messageGasLimit = undefined;
-            const ret = await runState.interpreter.call(gasLimit, toAddress, value, data);
+            const ret = runState.interpreter.call(gasLimit, toAddress, value, data);
             // Write return data to memory
             (0, util_2.writeCallOutput)(runState, outOffset, outLength);
             runState.stack.push(ret);
@@ -888,7 +888,7 @@ exports.handlers = new Map([
     // 0xf2: CALLCODE
     [
         0xf2,
-        async function (runState) {
+        function (runState) {
             const [_currentGasLimit, toAddr, value, inOffset, inLength, outOffset, outLength] = runState.stack.popN(7);
             const toAddress = new util_1.Address((0, util_2.addressToBuffer)(toAddr));
             const gasLimit = runState.messageGasLimit;
@@ -897,7 +897,7 @@ exports.handlers = new Map([
             if (inLength !== BigInt(0)) {
                 data = runState.memory.read(Number(inOffset), Number(inLength));
             }
-            const ret = await runState.interpreter.callCode(gasLimit, toAddress, value, data);
+            const ret = runState.interpreter.callCode(gasLimit, toAddress, value, data);
             // Write return data to memory
             (0, util_2.writeCallOutput)(runState, outOffset, outLength);
             runState.stack.push(ret);
@@ -906,7 +906,7 @@ exports.handlers = new Map([
     // 0xf4: DELEGATECALL
     [
         0xf4,
-        async function (runState) {
+        function (runState) {
             const value = runState.interpreter.getCallValue();
             const [_currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.popN(6);
             const toAddress = new util_1.Address((0, util_2.addressToBuffer)(toAddr));
@@ -916,7 +916,7 @@ exports.handlers = new Map([
             }
             const gasLimit = runState.messageGasLimit;
             runState.messageGasLimit = undefined;
-            const ret = await runState.interpreter.callDelegate(gasLimit, toAddress, value, data);
+            const ret = runState.interpreter.callDelegate(gasLimit, toAddress, value, data);
             // Write return data to memory
             (0, util_2.writeCallOutput)(runState, outOffset, outLength);
             runState.stack.push(ret);
@@ -925,7 +925,7 @@ exports.handlers = new Map([
     // 0xf6: AUTH
     [
         0xf6,
-        async function (runState) {
+        function (runState) {
             // eslint-disable-next-line prefer-const
             let [authority, memOffset, memLength] = runState.stack.popN(3);
             if (memLength > BigInt(128)) {
@@ -973,7 +973,7 @@ exports.handlers = new Map([
     // 0xf7: AUTHCALL
     [
         0xf7,
-        async function (runState) {
+        function (runState) {
             const [_currentGasLimit, addr, value, _valueExt, argsOffset, argsLength, retOffset, retLength,] = runState.stack.popN(8);
             const toAddress = new util_1.Address((0, util_2.addressToBuffer)(addr));
             const gasLimit = runState.messageGasLimit;
@@ -982,7 +982,7 @@ exports.handlers = new Map([
             if (argsLength !== BigInt(0)) {
                 data = runState.memory.read(Number(argsOffset), Number(argsLength));
             }
-            const ret = await runState.interpreter.authcall(gasLimit, toAddress, value, data);
+            const ret = runState.interpreter.authcall(gasLimit, toAddress, value, data);
             // Write return data to memory
             (0, util_2.writeCallOutput)(runState, retOffset, retLength);
             runState.stack.push(ret);
@@ -991,7 +991,7 @@ exports.handlers = new Map([
     // 0xfa: STATICCALL
     [
         0xfa,
-        async function (runState) {
+        function (runState) {
             const value = BigInt(0);
             const [_currentGasLimit, toAddr, inOffset, inLength, outOffset, outLength] = runState.stack.popN(6);
             const toAddress = new util_1.Address((0, util_2.addressToBuffer)(toAddr));
@@ -1001,7 +1001,7 @@ exports.handlers = new Map([
             if (inLength !== BigInt(0)) {
                 data = runState.memory.read(Number(inOffset), Number(inLength));
             }
-            const ret = await runState.interpreter.callStatic(gasLimit, toAddress, value, data);
+            const ret = runState.interpreter.callStatic(gasLimit, toAddress, value, data);
             // Write return data to memory
             (0, util_2.writeCallOutput)(runState, outOffset, outLength);
             runState.stack.push(ret);
@@ -1035,7 +1035,7 @@ exports.handlers = new Map([
     // 0xff: SELFDESTRUCT
     [
         0xff,
-        async function (runState) {
+        function (runState) {
             const selfdestructToAddressBigInt = runState.stack.pop();
             const selfdestructToAddress = new util_1.Address((0, util_2.addressToBuffer)(selfdestructToAddressBigInt));
             return runState.interpreter.selfDestruct(selfdestructToAddress);

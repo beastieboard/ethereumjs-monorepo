@@ -103,14 +103,13 @@ class EVM {
         }
         // We cache this promisified function as it's called from the main execution loop, and
         // promisifying each time has a huge performance impact.
-        //this._emit = <(topic: string, data: any) => Promise<void>>(
+        //this._emit = <(topic: string, data: any) => void>(
         //  promisify(this.events.emit.bind(this.events))
         //)
         this._emit = (topic, data) => {
             if (this.DEBUG) {
                 debug(`Dropping EVM event: ${topic}`);
             }
-            return new Promise((resolve) => resolve());
         };
     }
     get precompiles() {
@@ -120,16 +119,16 @@ class EVM {
         return this._opcodes;
     }
     /**
-     * EVM async constructor. Creates engine instance and initializes it.
+     * EVM constructor. Creates engine instance and initializes it.
      *
      * @param opts EVM engine constructor options
      */
-    static async create(opts) {
+    static create(opts) {
         const evm = new this(opts);
-        await evm.init();
+        evm.init();
         return evm;
     }
-    async init() {
+    init() {
         if (this._isInitialized) {
             return;
         }
@@ -139,7 +138,7 @@ class EVM {
             }
             else {
                 const mcl = this._mcl;
-                await mclInitPromise; // ensure that mcl is initialized.
+                mclInitPromise; // ensure that mcl is initialized.
                 mcl.setMapToMode(mcl.IRTF); // set the right map mode; otherwise mapToG2 will return wrong values.
                 mcl.verifyOrderG1(1); // subgroup checks for G1
                 mcl.verifyOrderG2(1); // subgroup checks for G2
@@ -158,38 +157,38 @@ class EVM {
         this._handlers = data.handlers;
         return data.opcodes;
     }
-    async _executePureCall(message) {
-        await this._loadCode(message);
-        let result = await this.runInterpreter(message);
+    _executePureCall(message) {
+        this._loadCode(message);
+        let result = this.runInterpreter(message);
         return {
             execResult: result,
         };
     }
-    async _executeCall(message) {
-        const account = await this.eei.getAccount(message.authcallOrigin ?? message.caller);
+    _executeCall(message) {
+        const account = this.eei.getAccount(message.authcallOrigin ?? message.caller);
         let errorMessage;
         // Reduce tx value from sender
         if (!message.delegatecall) {
             try {
-                await this._reduceSenderBalance(account, message);
+                this._reduceSenderBalance(account, message);
             }
             catch (e) {
                 errorMessage = e;
             }
         }
         // Load `to` account
-        const toAccount = await this.eei.getAccount(message.to);
+        const toAccount = this.eei.getAccount(message.to);
         // Add tx value to the `to` account
         if (!message.delegatecall) {
             try {
-                await this._addToBalance(toAccount, message);
+                this._addToBalance(toAccount, message);
             }
             catch (e) {
                 errorMessage = e;
             }
         }
         // Load code
-        await this._loadCode(message);
+        this._loadCode(message);
         let exit = false;
         if (!message.code || message.code.length === 0) {
             exit = true;
@@ -218,14 +217,14 @@ class EVM {
             if (this.DEBUG) {
                 debug(`Run precompile`);
             }
-            result = await this.runPrecompile(message.code, message.data, message.gasLimit);
+            result = this.runPrecompile(message.code, message.data, message.gasLimit);
             result.gasRefund = message.gasRefund;
         }
         else {
             if (this.DEBUG) {
                 debug(`Start bytecode processing...`);
             }
-            result = await this.runInterpreter(message);
+            result = this.runInterpreter(message);
         }
         if (message.depth === 0) {
             this.postMessageCleanup();
@@ -234,10 +233,10 @@ class EVM {
             execResult: result,
         };
     }
-    async _executeCreate(message) {
-        const account = await this.eei.getAccount(message.caller);
+    _executeCreate(message) {
+        const account = this.eei.getAccount(message.caller);
         // Reduce tx value from sender
-        await this._reduceSenderBalance(account, message);
+        this._reduceSenderBalance(account, message);
         if (this._common.isActivatedEIP(3860)) {
             if (message.data.length > Number(this._common.param('vm', 'maxInitCodeSize'))) {
                 return {
@@ -252,11 +251,11 @@ class EVM {
         }
         message.code = message.data;
         message.data = Buffer.alloc(0);
-        message.to = await this._generateAddress(message);
+        message.to = this._generateAddress(message);
         if (this.DEBUG) {
             debug(`Generated CREATE contract address ${message.to}`);
         }
-        let toAccount = await this.eei.getAccount(message.to);
+        let toAccount = this.eei.getAccount(message.to);
         // Check for collision
         if ((toAccount.nonce && toAccount.nonce > BigInt(0)) ||
             !toAccount.codeHash.equals(util_1.KECCAK256_NULL)) {
@@ -272,13 +271,13 @@ class EVM {
                 },
             };
         }
-        await this.eei.clearContractStorage(message.to);
+        this.eei.clearContractStorage(message.to);
         const newContractEvent = {
             address: message.to,
             code: message.code,
         };
-        await this._emit('newContract', newContractEvent);
-        toAccount = await this.eei.getAccount(message.to);
+        this._emit('newContract', newContractEvent);
+        toAccount = this.eei.getAccount(message.to);
         // EIP-161 on account creation and CREATE execution
         if (this._common.gteHardfork(common_1.Hardfork.SpuriousDragon)) {
             toAccount.nonce += BigInt(1);
@@ -286,7 +285,7 @@ class EVM {
         // Add tx value to the `to` account
         let errorMessage;
         try {
-            await this._addToBalance(toAccount, message);
+            this._addToBalance(toAccount, message);
         }
         catch (e) {
             errorMessage = e;
@@ -318,7 +317,7 @@ class EVM {
         if (this.DEBUG) {
             debug(`Start bytecode processing...`);
         }
-        let result = await this.runInterpreter(message);
+        let result = this.runInterpreter(message);
         // fee for size of the return value
         let totalGas = result.executionGasUsed;
         let returnFee = BigInt(0);
@@ -400,7 +399,7 @@ class EVM {
         if (!result.exceptionError &&
             result.returnValue !== undefined &&
             result.returnValue.length !== 0) {
-            await this.eei.putContractCode(message.to, result.returnValue);
+            this.eei.putContractCode(message.to, result.returnValue);
             if (this.DEBUG) {
                 debug(`Code saved on new contract creation`);
             }
@@ -412,9 +411,9 @@ class EVM {
                 // This contract would be considered "DEAD" in later hard forks.
                 // It is thus an unecessary default item, which we have to save to dik
                 // It does change the state root, but it only wastes storage.
-                //await this._state.putContractCode(message.to, result.returnValue)
-                const account = await this.eei.getAccount(message.to);
-                await this.eei.putAccount(message.to, account);
+                //this._state.putContractCode(message.to, result.returnValue)
+                const account = this.eei.getAccount(message.to);
+                this.eei.putAccount(message.to, account);
             }
         }
         return {
@@ -426,7 +425,7 @@ class EVM {
      * Starts the actual bytecode processing for a CALL or CREATE, providing
      * it with the {@link EEI}.
      */
-    async runInterpreter(message, opts = {}) {
+    runInterpreter(message, opts = {}) {
         const env = {
             address: message.to ?? util_1.Address.zero(),
             caller: message.caller ?? util_1.Address.zero(),
@@ -438,7 +437,7 @@ class EVM {
             gasPrice: this._tx.gasPrice,
             origin: this._tx.origin ?? message.caller ?? util_1.Address.zero(),
             block: this._block ?? defaultBlock(),
-            contract: await this.eei.getAccount(message.to ?? util_1.Address.zero()),
+            contract: this.eei.getAccount(message.to ?? util_1.Address.zero()),
             codeAddress: message.codeAddress,
             gasRefund: message.gasRefund,
         };
@@ -447,7 +446,7 @@ class EVM {
         if (message.selfdestruct) {
             interpreter._result.selfdestruct = message.selfdestruct;
         }
-        const interpreterRes = await interpreter.run(message.code, opts);
+        const interpreterRes = interpreter.run(message.code, opts);
         let result = interpreter._result;
         let gasUsed = message.gasLimit - interpreterRes.runState.gasLeft;
         if (interpreterRes.exceptionError) {
@@ -476,7 +475,7 @@ class EVM {
             returnValue: result.returnValue ? result.returnValue : Buffer.alloc(0),
         };
     }
-    async runPure(opts) {
+    runPure(opts) {
         this._block = opts.block ?? defaultBlock();
         this._tx = {
             gasPrice: opts.gasPrice ?? BigInt(0),
@@ -499,14 +498,14 @@ class EVM {
             delegatecall: opts.delegatecall,
             isPure: true,
         });
-        return await this._executePureCall(message);
+        return this._executePureCall(message);
     }
     /**
      * Executes an EVM message, determining whether it's a call or create
      * based on the `to` address. It checkpoints the state and reverts changes
      * if an exception happens during the message execution.
      */
-    async runCall(opts) {
+    runCall(opts) {
         let message = opts.message;
         if (!message) {
             this._block = opts.block ?? defaultBlock();
@@ -517,11 +516,11 @@ class EVM {
             const caller = opts.caller ?? util_1.Address.zero();
             const value = opts.value ?? BigInt(0);
             if (opts.skipBalance === true) {
-                const callerAccount = await this.eei.getAccount(caller);
+                const callerAccount = this.eei.getAccount(caller);
                 if (callerAccount.balance < value) {
                     // if skipBalance and balance less than value, set caller balance to `value` to ensure sufficient funds
                     callerAccount.balance = value;
-                    await this.eei.putAccount(caller, callerAccount);
+                    this.eei.putAccount(caller, callerAccount);
                 }
             }
             message = new message_1.Message({
@@ -539,12 +538,12 @@ class EVM {
                 delegatecall: opts.delegatecall,
             });
         }
-        await this._emit('beforeMessage', message);
+        this._emit('beforeMessage', message);
         if (!message.to && this._common.isActivatedEIP(2929) === true) {
             message.code = message.data;
-            this.eei.addWarmedAddress((await this._generateAddress(message)).buf);
+            this.eei.addWarmedAddress((this._generateAddress(message)).buf);
         }
-        await this.eei.checkpoint();
+        this.eei.checkpoint();
         this._transientStorage.checkpoint();
         if (this.DEBUG) {
             debug('-'.repeat(100));
@@ -559,13 +558,13 @@ class EVM {
             if (this.DEBUG) {
                 debug(`Message CALL execution (to: ${message.to})`);
             }
-            result = await this._executeCall(message);
+            result = this._executeCall(message);
         }
         else {
             if (this.DEBUG) {
                 debug(`Message CREATE execution (to undefined)`);
             }
-            result = await this._executeCreate(message);
+            result = this._executeCreate(message);
         }
         if (this.DEBUG) {
             const { executionGasUsed, exceptionError, returnValue } = result.execResult;
@@ -582,7 +581,7 @@ class EVM {
             if (this._common.gteHardfork(common_1.Hardfork.Homestead) ||
                 err.error !== exceptions_1.ERROR.CODESTORE_OUT_OF_GAS) {
                 result.execResult.logs = [];
-                await this.eei.revert();
+                this.eei.revert();
                 this._transientStorage.revert();
                 if (this.DEBUG) {
                     debug(`message checkpoint reverted`);
@@ -591,7 +590,7 @@ class EVM {
             else {
                 // we are in chainstart and the error was the code deposit error
                 // we do like nothing happened.
-                await this.eei.commit();
+                this.eei.commit();
                 this._transientStorage.commit();
                 if (this.DEBUG) {
                     debug(`message checkpoint committed`);
@@ -599,20 +598,20 @@ class EVM {
             }
         }
         else {
-            await this.eei.commit();
+            this.eei.commit();
             this._transientStorage.commit();
             if (this.DEBUG) {
                 debug(`message checkpoint committed`);
             }
         }
-        await this._emit('afterMessage', result);
+        this._emit('afterMessage', result);
         return result;
     }
     /**
      * Bound to the global VM and therefore
      * shouldn't be used directly from the evm class
      */
-    async runCode(opts) {
+    runCode(opts) {
         this._block = opts.block ?? defaultBlock();
         this._tx = {
             gasPrice: opts.gasPrice ?? BigInt(0),
@@ -653,7 +652,7 @@ class EVM {
         };
         return code(opts);
     }
-    async _loadCode(message) {
+    _loadCode(message) {
         if (!message.code) {
             const precompile = this.getPrecompile(message.codeAddress);
             if (precompile) {
@@ -661,18 +660,18 @@ class EVM {
                 message.isCompiled = true;
             }
             else {
-                message.code = await this.eei.getContractCode(message.codeAddress);
+                message.code = this.eei.getContractCode(message.codeAddress);
                 message.isCompiled = false;
             }
         }
     }
-    async _generateAddress(message) {
+    _generateAddress(message) {
         let addr;
         if (message.salt) {
             addr = (0, util_1.generateAddress2)(message.caller.buf, message.salt, message.code);
         }
         else {
-            const acc = await this.eei.getAccount(message.caller);
+            const acc = this.eei.getAccount(message.caller);
             let newNonce = acc.nonce;
             if (message.depth > 0) {
                 newNonce--;
@@ -681,7 +680,7 @@ class EVM {
         }
         return new util_1.Address(addr);
     }
-    async _reduceSenderBalance(account, message) {
+    _reduceSenderBalance(account, message) {
         account.balance -= message.value;
         if (account.balance < BigInt(0)) {
             throw new exceptions_1.EvmError(exceptions_1.ERROR.INSUFFICIENT_BALANCE);
@@ -692,7 +691,7 @@ class EVM {
         }
         return result;
     }
-    async _addToBalance(toAccount, message) {
+    _addToBalance(toAccount, message) {
         const newBalance = toAccount.balance + message.value;
         if (newBalance > util_1.MAX_INTEGER) {
             throw new exceptions_1.EvmError(exceptions_1.ERROR.VALUE_OVERFLOW);
@@ -705,8 +704,8 @@ class EVM {
         }
         return result;
     }
-    async _touchAccount(address) {
-        const account = await this.eei.getAccount(address);
+    _touchAccount(address) {
+        const account = this.eei.getAccount(address);
         return this.eei.putAccount(address, account);
     }
     /**

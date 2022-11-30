@@ -147,7 +147,7 @@ export class Interpreter {
     }
   }
 
-  async run(code: Buffer, opts: InterpreterOpts = {}): Promise<InterpreterResult> {
+  run(code: Buffer, opts: InterpreterOpts = {}): InterpreterResult {
     if (!this._common.isActivatedEIP(3540) || code[0] !== EOF.FORMAT) {
       // EIP-3540 isn't active and first byte is not 0xEF - treat as legacy bytecode
       this._runState.code = code
@@ -206,7 +206,7 @@ export class Interpreter {
       this._runState.opCode = opCode
 
       try {
-        await this.runStep()
+        this.runStep()
       } catch (e: any) {
         // re-throw on non-VM errors
         if (!('errorType' in e && e.errorType === 'EvmError')) {
@@ -230,8 +230,7 @@ export class Interpreter {
    * Executes the opcode to which the program counter is pointing,
    * reducing its base gas cost, and increments the program counter.
    */
-  async runStep(): Promise<void> {
-    ;(window as any).vm = this
+  runStep(): void {
     const opInfo = this.lookupOpInfo(this._runState.opCode)
 
     let gas = BigInt(opInfo.fee)
@@ -243,13 +242,13 @@ export class Interpreter {
       const dynamicGasHandler = this._evm._dynamicGasHandlers.get(this._runState.opCode)!
       // This function updates the gas in-place.
       // It needs the base fee, for correct gas limit calculation for the CALL opcodes
-      gas = await dynamicGasHandler(this._runState, gas, this._common)
+      gas = dynamicGasHandler(this._runState, gas, this._common)
     }
 
     //if (this._evm.events.listenerCount('step') > 0 || this._evm.DEBUG) {
     //  // Only run this stepHook function if there is an event listener (e.g. test runner)
     //  // or if the vm is running in debug mode (to display opcode debug logs)
-    //  await this._runStepHook(gas, gasLimitClone)
+    //  this._runStepHook(gas, gasLimitClone)
     //}
 
     // Check for invalid opcode
@@ -266,7 +265,7 @@ export class Interpreter {
     const opFn = this.getOpHandler(opInfo)
 
     if (opInfo.isAsync) {
-      await (opFn as AsyncOpHandler).apply(null, [this._runState, this._common])
+      (opFn as AsyncOpHandler).apply(null, [this._runState, this._common])
     } else {
       opFn.apply(null, [this._runState, this._common])
     }
@@ -287,7 +286,7 @@ export class Interpreter {
     return this._evm._opcodes.get(op) ?? this._evm._opcodes.get(0xfe)!
   }
 
-  async _runStepHook(dynamicFee: bigint, gasLeft: bigint): Promise<void> {
+  _runStepHook(dynamicFee: bigint, gasLeft: bigint): void {
     const opcode = this.lookupOpInfo(this._runState.opCode)
     const eventObj: InterpreterStep = {
       pc: this._runState.programCounter,
@@ -458,21 +457,21 @@ export class Interpreter {
    * Returns balance of the given account.
    * @param address - Address of account
    */
-  async getExternalBalance(address: Address): Promise<bigint> {
+  getExternalBalance(address: Address): bigint {
     // shortcut if current account
     if (address.equals(this._env.address)) {
       return this._env.contract.balance
     }
 
-    return (await this._eei.getAccount(address)).balance
+    return (this._eei.getAccount(address)).balance
   }
 
   /**
    * Store 256-bit a value in memory to persistent storage.
    */
-  async storageStore(key: Buffer, value: Buffer): Promise<void> {
-    await this._eei.storageStore(this._env.address, key, value)
-    const account = await this._eei.getAccount(this._env.address)
+  storageStore(key: Buffer, value: Buffer): void {
+    this._eei.storageStore(this._env.address, key, value)
+    const account = this._eei.getAccount(this._env.address)
     this._env.contract = account
   }
 
@@ -481,7 +480,7 @@ export class Interpreter {
    * @param key - Storage key
    * @param original - If true, return the original storage value (default: false)
    */
-  async storageLoad(key: Buffer, original = false): Promise<Buffer> {
+  storageLoad(key: Buffer, original = false): Buffer {
     return this._eei.storageLoad(this._env.address, key, original)
   }
 
@@ -702,7 +701,7 @@ export class Interpreter {
   /**
    * Sends a message with arbitrary data to a given address path.
    */
-  async call(gasLimit: bigint, address: Address, value: bigint, data: Buffer): Promise<bigint> {
+  call(gasLimit: bigint, address: Address, value: bigint, data: Buffer): bigint {
     const msg = new Message({
       caller: this._env.address,
       gasLimit,
@@ -719,7 +718,7 @@ export class Interpreter {
   /**
    * Sends a message with arbitrary data to a given address path.
    */
-  async authcall(gasLimit: bigint, address: Address, value: bigint, data: Buffer): Promise<bigint> {
+  authcall(gasLimit: bigint, address: Address, value: bigint, data: Buffer): bigint {
     const msg = new Message({
       caller: this._runState.auth,
       gasLimit,
@@ -737,7 +736,7 @@ export class Interpreter {
   /**
    * Message-call into this account with an alternative account's code.
    */
-  async callCode(gasLimit: bigint, address: Address, value: bigint, data: Buffer): Promise<bigint> {
+  callCode(gasLimit: bigint, address: Address, value: bigint, data: Buffer): bigint {
     const msg = new Message({
       caller: this._env.address,
       gasLimit,
@@ -757,12 +756,12 @@ export class Interpreter {
    * state modifications. This includes log, create, selfdestruct and call with
    * a non-zero value.
    */
-  async callStatic(
+  callStatic(
     gasLimit: bigint,
     address: Address,
     value: bigint,
     data: Buffer
-  ): Promise<bigint> {
+  ): bigint {
     const msg = new Message({
       caller: this._env.address,
       gasLimit,
@@ -780,12 +779,12 @@ export class Interpreter {
    * Message-call into this account with an alternative account’s code, but
    * persisting the current values for sender and value.
    */
-  async callDelegate(
+  callDelegate(
     gasLimit: bigint,
     address: Address,
     value: bigint,
     data: Buffer
-  ): Promise<bigint> {
+  ): bigint {
     const msg = new Message({
       caller: this._env.caller,
       gasLimit,
@@ -801,7 +800,7 @@ export class Interpreter {
     return this._baseCall(msg)
   }
 
-  async _baseCall(msg: Message): Promise<bigint> {
+  _baseCall(msg: Message): bigint {
     const selfdestruct = { ...this._result.selfdestruct }
     msg.selfdestruct = selfdestruct
     msg.gasRefund = this._runState.gasRefund
@@ -817,7 +816,7 @@ export class Interpreter {
       return BigInt(0)
     }
 
-    const results = await this._evm.runCall({ message: msg })
+    const results = this._evm.runCall({ message: msg })
 
     if (results.execResult.logs) {
       this._result.logs = this._result.logs.concat(results.execResult.logs)
@@ -838,7 +837,7 @@ export class Interpreter {
     if (!results.execResult.exceptionError) {
       Object.assign(this._result.selfdestruct, selfdestruct)
       // update stateRoot on current contract
-      const account = await this._eei.getAccount(this._env.address)
+      const account = this._eei.getAccount(this._env.address)
       this._env.contract = account
       this._runState.gasRefund = results.execResult.gasRefund ?? BigInt(0)
     }
@@ -849,7 +848,7 @@ export class Interpreter {
   /**
    * Creates a new contract with a given value.
    */
-  async create(gasLimit: bigint, value: bigint, data: Buffer, salt?: Buffer): Promise<bigint> {
+  create(gasLimit: bigint, value: bigint, data: Buffer, salt?: Buffer): bigint {
     const selfdestruct = { ...this._result.selfdestruct }
     const caller = this._env.address
     const depth = this._env.depth + 1
@@ -871,7 +870,7 @@ export class Interpreter {
     }
 
     this._env.contract.nonce += BigInt(1)
-    await this._eei.putAccount(this._env.address, this._env.contract)
+    this._eei.putAccount(this._env.address, this._env.contract)
 
     if (this._common.isActivatedEIP(3860)) {
       if (data.length > Number(this._common.param('vm', 'maxInitCodeSize'))) {
@@ -890,7 +889,7 @@ export class Interpreter {
       gasRefund: this._runState.gasRefund,
     })
 
-    const results = await this._evm.runCall({ message })
+    const results = this._evm.runCall({ message })
 
     if (results.execResult.logs) {
       this._result.logs = this._result.logs.concat(results.execResult.logs)
@@ -913,7 +912,7 @@ export class Interpreter {
     ) {
       Object.assign(this._result.selfdestruct, selfdestruct)
       // update stateRoot on current contract
-      const account = await this._eei.getAccount(this._env.address)
+      const account = this._eei.getAccount(this._env.address)
       this._env.contract = account
       this._runState.gasRefund = results.execResult.gasRefund ?? BigInt(0)
       if (results.createdAddress) {
@@ -929,7 +928,7 @@ export class Interpreter {
    * Creates a new contract with a given value. Generates
    * a deterministic address via CREATE2 rules.
    */
-  async create2(gasLimit: bigint, value: bigint, data: Buffer, salt: Buffer): Promise<bigint> {
+  create2(gasLimit: bigint, value: bigint, data: Buffer, salt: Buffer): bigint {
     return this.create(gasLimit, value, data, salt)
   }
 
@@ -939,11 +938,11 @@ export class Interpreter {
    * execution will be aborted immediately.
    * @param toAddress - Beneficiary address
    */
-  async selfDestruct(toAddress: Address): Promise<void> {
+  selfDestruct(toAddress: Address): void {
     return this._selfDestruct(toAddress)
   }
 
-  async _selfDestruct(toAddress: Address): Promise<void> {
+  _selfDestruct(toAddress: Address): void {
     // only add to refund if this is the first selfdestruct for the address
     if (this._result.selfdestruct[this._env.address.buf.toString('hex')] === undefined) {
       this.refundGas(this._common.param('gasPrices', 'selfdestructRefund'))
@@ -952,12 +951,12 @@ export class Interpreter {
     this._result.selfdestruct[this._env.address.buf.toString('hex')] = toAddress.buf
 
     // Add to beneficiary balance
-    const toAccount = await this._eei.getAccount(toAddress)
+    const toAccount = this._eei.getAccount(toAddress)
     toAccount.balance += this._env.contract.balance
-    await this._eei.putAccount(toAddress, toAccount)
+    this._eei.putAccount(toAddress, toAccount)
 
     // Subtract from contract balance
-    await this._eei.modifyAccountFields(this._env.address, {
+    this._eei.modifyAccountFields(this._env.address, {
       balance: BigInt(0),
     })
 
@@ -996,7 +995,7 @@ export class PureInterpreter extends Interpreter {
    * Executes the opcode to which the program counter is pointing,
    * reducing its base gas cost, and increments the program counter.
    */
-  async runStepPure(): Promise<void> {
+  runStepPure(): void {
     const opInfo = this.lookupOpInfo(this._runState.opCode)
 
     //let gas = BigInt(opInfo.fee)
@@ -1008,13 +1007,13 @@ export class PureInterpreter extends Interpreter {
     //  const dynamicGasHandler = this._evm._dynamicGasHandlers.get(this._runState.opCode)!
     //  // This function updates the gas in-place.
     //  // It needs the base fee, for correct gas limit calculation for the CALL opcodes
-    //  gas = await dynamicGasHandler(this._runState, gas, this._common)
+    //  gas = dynamicGasHandler(this._runState, gas, this._common)
     //}
 
     //if (this._evm.events.listenerCount('step') > 0 || this._evm.DEBUG) {
     //  // Only run this stepHook function if there is an event listener (e.g. test runner)
     //  // or if the vm is running in debug mode (to display opcode debug logs)
-    //  await this._runStepHook(gas, gasLimitClone)
+    //  this._runStepHook(gas, gasLimitClone)
     //}
 
     // Check for invalid opcode
@@ -1031,7 +1030,7 @@ export class PureInterpreter extends Interpreter {
     const opFn = this.getOpHandler(opInfo)
 
     if (opInfo.isAsync) {
-      await (opFn as AsyncOpHandler).apply(null, [this._runState, this._common])
+      (opFn as AsyncOpHandler).apply(null, [this._runState, this._common])
     } else {
       opFn.apply(null, [this._runState, this._common])
     }

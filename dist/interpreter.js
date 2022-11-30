@@ -49,7 +49,7 @@ class Interpreter {
             selfdestruct: {},
         };
     }
-    async run(code, opts = {}) {
+    run(code, opts = {}) {
         if (!this._common.isActivatedEIP(3540) || code[0] !== eof_1.EOF.FORMAT) {
             // EIP-3540 isn't active and first byte is not 0xEF - treat as legacy bytecode
             this._runState.code = code;
@@ -105,7 +105,7 @@ class Interpreter {
             }
             this._runState.opCode = opCode;
             try {
-                await this.runStep();
+                this.runStep();
             }
             catch (e) {
                 // re-throw on non-VM errors
@@ -128,9 +128,7 @@ class Interpreter {
      * Executes the opcode to which the program counter is pointing,
      * reducing its base gas cost, and increments the program counter.
      */
-    async runStep() {
-        ;
-        window.vm = this;
+    runStep() {
         const opInfo = this.lookupOpInfo(this._runState.opCode);
         let gas = BigInt(opInfo.fee);
         // clone the gas limit; call opcodes can add stipend,
@@ -140,12 +138,12 @@ class Interpreter {
             const dynamicGasHandler = this._evm._dynamicGasHandlers.get(this._runState.opCode);
             // This function updates the gas in-place.
             // It needs the base fee, for correct gas limit calculation for the CALL opcodes
-            gas = await dynamicGasHandler(this._runState, gas, this._common);
+            gas = dynamicGasHandler(this._runState, gas, this._common);
         }
         //if (this._evm.events.listenerCount('step') > 0 || this._evm.DEBUG) {
         //  // Only run this stepHook function if there is an event listener (e.g. test runner)
         //  // or if the vm is running in debug mode (to display opcode debug logs)
-        //  await this._runStepHook(gas, gasLimitClone)
+        //  this._runStepHook(gas, gasLimitClone)
         //}
         // Check for invalid opcode
         if (opInfo.name === 'INVALID') {
@@ -158,7 +156,7 @@ class Interpreter {
         // Execute opcode handler
         const opFn = this.getOpHandler(opInfo);
         if (opInfo.isAsync) {
-            await opFn.apply(null, [this._runState, this._common]);
+            opFn.apply(null, [this._runState, this._common]);
         }
         else {
             opFn.apply(null, [this._runState, this._common]);
@@ -177,7 +175,7 @@ class Interpreter {
         // if not found, return 0xfe: INVALID
         return this._evm._opcodes.get(op) ?? this._evm._opcodes.get(0xfe);
     }
-    async _runStepHook(dynamicFee, gasLeft) {
+    _runStepHook(dynamicFee, gasLeft) {
         const opcode = this.lookupOpInfo(this._runState.opCode);
         const eventObj = {
             pc: this._runState.programCounter,
@@ -325,19 +323,19 @@ class Interpreter {
      * Returns balance of the given account.
      * @param address - Address of account
      */
-    async getExternalBalance(address) {
+    getExternalBalance(address) {
         // shortcut if current account
         if (address.equals(this._env.address)) {
             return this._env.contract.balance;
         }
-        return (await this._eei.getAccount(address)).balance;
+        return (this._eei.getAccount(address)).balance;
     }
     /**
      * Store 256-bit a value in memory to persistent storage.
      */
-    async storageStore(key, value) {
-        await this._eei.storageStore(this._env.address, key, value);
-        const account = await this._eei.getAccount(this._env.address);
+    storageStore(key, value) {
+        this._eei.storageStore(this._env.address, key, value);
+        const account = this._eei.getAccount(this._env.address);
         this._env.contract = account;
     }
     /**
@@ -345,7 +343,7 @@ class Interpreter {
      * @param key - Storage key
      * @param original - If true, return the original storage value (default: false)
      */
-    async storageLoad(key, original = false) {
+    storageLoad(key, original = false) {
         return this._eei.storageLoad(this._env.address, key, original);
     }
     /**
@@ -540,7 +538,7 @@ class Interpreter {
     /**
      * Sends a message with arbitrary data to a given address path.
      */
-    async call(gasLimit, address, value, data) {
+    call(gasLimit, address, value, data) {
         const msg = new message_1.Message({
             caller: this._env.address,
             gasLimit,
@@ -555,7 +553,7 @@ class Interpreter {
     /**
      * Sends a message with arbitrary data to a given address path.
      */
-    async authcall(gasLimit, address, value, data) {
+    authcall(gasLimit, address, value, data) {
         const msg = new message_1.Message({
             caller: this._runState.auth,
             gasLimit,
@@ -571,7 +569,7 @@ class Interpreter {
     /**
      * Message-call into this account with an alternative account's code.
      */
-    async callCode(gasLimit, address, value, data) {
+    callCode(gasLimit, address, value, data) {
         const msg = new message_1.Message({
             caller: this._env.address,
             gasLimit,
@@ -589,7 +587,7 @@ class Interpreter {
      * state modifications. This includes log, create, selfdestruct and call with
      * a non-zero value.
      */
-    async callStatic(gasLimit, address, value, data) {
+    callStatic(gasLimit, address, value, data) {
         const msg = new message_1.Message({
             caller: this._env.address,
             gasLimit,
@@ -605,7 +603,7 @@ class Interpreter {
      * Message-call into this account with an alternative account’s code, but
      * persisting the current values for sender and value.
      */
-    async callDelegate(gasLimit, address, value, data) {
+    callDelegate(gasLimit, address, value, data) {
         const msg = new message_1.Message({
             caller: this._env.caller,
             gasLimit,
@@ -619,7 +617,7 @@ class Interpreter {
         });
         return this._baseCall(msg);
     }
-    async _baseCall(msg) {
+    _baseCall(msg) {
         const selfdestruct = { ...this._result.selfdestruct };
         msg.selfdestruct = selfdestruct;
         msg.gasRefund = this._runState.gasRefund;
@@ -630,7 +628,7 @@ class Interpreter {
             (msg.delegatecall !== true && this._env.contract.balance < msg.value)) {
             return BigInt(0);
         }
-        const results = await this._evm.runCall({ message: msg });
+        const results = this._evm.runCall({ message: msg });
         if (results.execResult.logs) {
             this._result.logs = this._result.logs.concat(results.execResult.logs);
         }
@@ -645,7 +643,7 @@ class Interpreter {
         if (!results.execResult.exceptionError) {
             Object.assign(this._result.selfdestruct, selfdestruct);
             // update stateRoot on current contract
-            const account = await this._eei.getAccount(this._env.address);
+            const account = this._eei.getAccount(this._env.address);
             this._env.contract = account;
             this._runState.gasRefund = results.execResult.gasRefund ?? BigInt(0);
         }
@@ -654,7 +652,7 @@ class Interpreter {
     /**
      * Creates a new contract with a given value.
      */
-    async create(gasLimit, value, data, salt) {
+    create(gasLimit, value, data, salt) {
         const selfdestruct = { ...this._result.selfdestruct };
         const caller = this._env.address;
         const depth = this._env.depth + 1;
@@ -670,7 +668,7 @@ class Interpreter {
             return BigInt(0);
         }
         this._env.contract.nonce += BigInt(1);
-        await this._eei.putAccount(this._env.address, this._env.contract);
+        this._eei.putAccount(this._env.address, this._env.contract);
         if (this._common.isActivatedEIP(3860)) {
             if (data.length > Number(this._common.param('vm', 'maxInitCodeSize'))) {
                 return BigInt(0);
@@ -686,7 +684,7 @@ class Interpreter {
             selfdestruct,
             gasRefund: this._runState.gasRefund,
         });
-        const results = await this._evm.runCall({ message });
+        const results = this._evm.runCall({ message });
         if (results.execResult.logs) {
             this._result.logs = this._result.logs.concat(results.execResult.logs);
         }
@@ -701,7 +699,7 @@ class Interpreter {
             results.execResult.exceptionError.error === exceptions_1.ERROR.CODESTORE_OUT_OF_GAS) {
             Object.assign(this._result.selfdestruct, selfdestruct);
             // update stateRoot on current contract
-            const account = await this._eei.getAccount(this._env.address);
+            const account = this._eei.getAccount(this._env.address);
             this._env.contract = account;
             this._runState.gasRefund = results.execResult.gasRefund ?? BigInt(0);
             if (results.createdAddress) {
@@ -715,7 +713,7 @@ class Interpreter {
      * Creates a new contract with a given value. Generates
      * a deterministic address via CREATE2 rules.
      */
-    async create2(gasLimit, value, data, salt) {
+    create2(gasLimit, value, data, salt) {
         return this.create(gasLimit, value, data, salt);
     }
     /**
@@ -724,21 +722,21 @@ class Interpreter {
      * execution will be aborted immediately.
      * @param toAddress - Beneficiary address
      */
-    async selfDestruct(toAddress) {
+    selfDestruct(toAddress) {
         return this._selfDestruct(toAddress);
     }
-    async _selfDestruct(toAddress) {
+    _selfDestruct(toAddress) {
         // only add to refund if this is the first selfdestruct for the address
         if (this._result.selfdestruct[this._env.address.buf.toString('hex')] === undefined) {
             this.refundGas(this._common.param('gasPrices', 'selfdestructRefund'));
         }
         this._result.selfdestruct[this._env.address.buf.toString('hex')] = toAddress.buf;
         // Add to beneficiary balance
-        const toAccount = await this._eei.getAccount(toAddress);
+        const toAccount = this._eei.getAccount(toAddress);
         toAccount.balance += this._env.contract.balance;
-        await this._eei.putAccount(toAddress, toAccount);
+        this._eei.putAccount(toAddress, toAccount);
         // Subtract from contract balance
-        await this._eei.modifyAccountFields(this._env.address, {
+        this._eei.modifyAccountFields(this._env.address, {
             balance: BigInt(0),
         });
         (0, opcodes_1.trap)(exceptions_1.ERROR.STOP);
@@ -773,7 +771,7 @@ class PureInterpreter extends Interpreter {
      * Executes the opcode to which the program counter is pointing,
      * reducing its base gas cost, and increments the program counter.
      */
-    async runStepPure() {
+    runStepPure() {
         const opInfo = this.lookupOpInfo(this._runState.opCode);
         //let gas = BigInt(opInfo.fee)
         // clone the gas limit; call opcodes can add stipend,
@@ -783,12 +781,12 @@ class PureInterpreter extends Interpreter {
         //  const dynamicGasHandler = this._evm._dynamicGasHandlers.get(this._runState.opCode)!
         //  // This function updates the gas in-place.
         //  // It needs the base fee, for correct gas limit calculation for the CALL opcodes
-        //  gas = await dynamicGasHandler(this._runState, gas, this._common)
+        //  gas = dynamicGasHandler(this._runState, gas, this._common)
         //}
         //if (this._evm.events.listenerCount('step') > 0 || this._evm.DEBUG) {
         //  // Only run this stepHook function if there is an event listener (e.g. test runner)
         //  // or if the vm is running in debug mode (to display opcode debug logs)
-        //  await this._runStepHook(gas, gasLimitClone)
+        //  this._runStepHook(gas, gasLimitClone)
         //}
         // Check for invalid opcode
         if (opInfo.name === 'INVALID') {
@@ -801,7 +799,7 @@ class PureInterpreter extends Interpreter {
         // Execute opcode handler
         const opFn = this.getOpHandler(opInfo);
         if (opInfo.isAsync) {
-            await opFn.apply(null, [this._runState, this._common]);
+            opFn.apply(null, [this._runState, this._common]);
         }
         else {
             opFn.apply(null, [this._runState, this._common]);

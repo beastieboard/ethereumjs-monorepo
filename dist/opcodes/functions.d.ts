@@ -4,7 +4,7 @@ export interface SyncOpHandler {
     (runState: RunState, common: Common): void;
 }
 export interface AsyncOpHandler {
-    (runState: RunState, common: Common): Promise<void>;
+    (runState: RunState, common: Common): void;
 }
 export declare type OpHandler = SyncOpHandler | AsyncOpHandler;
 export declare const handlers: Map<number, OpHandler>;

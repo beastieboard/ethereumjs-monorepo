@@ -9,8 +9,8 @@ import { Account, Address, PrefixedHexString } from '@ethereumjs/util';
  * API of the EVM
  */
 export interface EVMInterface {
-    runCall(opts: EVMRunCallOpts): Promise<EVMResult>;
-    runCode?(opts: EVMRunCodeOpts): Promise<ExecResult>;
+    runCall(opts: EVMRunCallOpts): EVMResult;
+    runCode?(opts: EVMRunCodeOpts): ExecResult;
     precompiles: Map<string, any>;
     copy(): EVMInterface;
     eei: EEIInterface;
@@ -24,9 +24,9 @@ export interface EVMInterface {
  * `@ethereumjs/vm` package.
  */
 export interface EEIInterface extends EVMStateAccess {
-    getBlockHash(num: bigint): Promise<bigint>;
-    storageStore(address: Address, key: Buffer, value: Buffer): Promise<void>;
-    storageLoad(address: Address, key: Buffer, original: boolean): Promise<Buffer>;
+    getBlockHash(num: bigint): bigint;
+    storageStore(address: Address, key: Buffer, value: Buffer): void;
+    storageLoad(address: Address, key: Buffer, original: boolean): Buffer;
     copy(): EEIInterface;
 }
 /**
@@ -44,8 +44,8 @@ export interface EVMStateAccess extends StateAccess {
     clearWarmedAccounts(): void;
     generateAccessList?(addressesRemoved: Address[], addressesOnlyStorage: Address[]): AccessList;
     clearOriginalStorageCache(): void;
-    cleanupTouchedAccounts(): Promise<void>;
-    generateCanonicalGenesis(initState: any): Promise<void>;
+    cleanupTouchedAccounts(): void;
+    generateCanonicalGenesis(initState: any): void;
 }
 export declare type DeleteOpcode = {
     opcode: number;
@@ -236,25 +236,25 @@ declare type Proof = {
 };
 declare type AccountFields = Partial<Pick<Account, 'nonce' | 'balance' | 'storageRoot' | 'codeHash'>>;
 interface StateAccess {
-    accountExists(address: Address): Promise<boolean>;
-    getAccount(address: Address): Promise<Account>;
-    putAccount(address: Address, account: Account): Promise<void>;
-    accountIsEmpty(address: Address): Promise<boolean>;
-    deleteAccount(address: Address): Promise<void>;
-    modifyAccountFields(address: Address, accountFields: AccountFields): Promise<void>;
-    putContractCode(address: Address, value: Buffer): Promise<void>;
-    getContractCode(address: Address): Promise<Buffer>;
-    getContractStorage(address: Address, key: Buffer): Promise<Buffer>;
-    putContractStorage(address: Address, key: Buffer, value: Buffer): Promise<void>;
-    clearContractStorage(address: Address): Promise<void>;
-    checkpoint(): Promise<void>;
-    commit(): Promise<void>;
-    revert(): Promise<void>;
-    getStateRoot(): Promise<Buffer>;
-    setStateRoot(stateRoot: Buffer): Promise<void>;
-    getProof?(address: Address, storageSlots: Buffer[]): Promise<Proof>;
-    verifyProof?(proof: Proof): Promise<boolean>;
-    hasStateRoot(root: Buffer): Promise<boolean>;
+    accountExists(address: Address): boolean;
+    getAccount(address: Address): Account;
+    putAccount(address: Address, account: Account): void;
+    accountIsEmpty(address: Address): boolean;
+    deleteAccount(address: Address): void;
+    modifyAccountFields(address: Address, accountFields: AccountFields): void;
+    putContractCode(address: Address, value: Buffer): void;
+    getContractCode(address: Address): Buffer;
+    getContractStorage(address: Address, key: Buffer): Buffer;
+    putContractStorage(address: Address, key: Buffer, value: Buffer): void;
+    clearContractStorage(address: Address): void;
+    checkpoint(): void;
+    commit(): void;
+    revert(): void;
+    getStateRoot(): Buffer;
+    setStateRoot(stateRoot: Buffer): void;
+    getProof?(address: Address, storageSlots: Buffer[]): Proof;
+    verifyProof?(proof: Proof): boolean;
+    hasStateRoot(root: Buffer): boolean;
 }
 export declare type Block = {
     header: {

@@ -4,7 +4,7 @@ exports.precompile11 = void 0;
 const evm_1 = require("../evm");
 const exceptions_1 = require("../exceptions");
 const { BLS12_381_ToFpPoint, BLS12_381_FromG1Point } = require('./util/bls12_381');
-async function precompile11(opts) {
+function precompile11(opts) {
     const mcl = opts._EVM._mcl;
     const inputData = opts.data;
     // note: the gas used is constant; even if the input is incorrect.

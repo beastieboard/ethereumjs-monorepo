@@ -4,7 +4,7 @@ exports.precompile0c = void 0;
 const evm_1 = require("../evm");
 const exceptions_1 = require("../exceptions");
 const { BLS12_381_ToG1Point, BLS12_381_ToFrPoint, BLS12_381_FromG1Point, } = require('./util/bls12_381');
-async function precompile0c(opts) {
+function precompile0c(opts) {
     const mcl = opts._EVM._mcl;
     const inputData = opts.data;
     if (inputData.length === 0) {

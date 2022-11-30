@@ -9,7 +9,7 @@ const { BLS12_381_ToG1Point, BLS12_381_ToG2Point } = require('./util/bls12_381')
 const zeroBuffer = Buffer.alloc(32, 0)
 const oneBuffer = Buffer.concat([Buffer.alloc(31, 0), Buffer.from('01', 'hex')])
 
-export async function precompile10(opts: PrecompileInput): Promise<ExecResult> {
+export function precompile10(opts: PrecompileInput): ExecResult {
   const mcl = (<any>opts._EVM)._mcl!
 
   const inputData = opts.data

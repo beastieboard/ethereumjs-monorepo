@@ -12,7 +12,7 @@ const {
   BLS12_381_FromG2Point,
 } = require('./util/bls12_381')
 
-export async function precompile0f(opts: PrecompileInput): Promise<ExecResult> {
+export function precompile0f(opts: PrecompileInput): ExecResult {
   const mcl = (<any>opts._EVM)._mcl!
 
   const inputData = opts.data
